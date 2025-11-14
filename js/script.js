@@ -1,9 +1,7 @@
 // Configurações
 const config = {
     whatsapp: {
-        number: '553388346755',
-        message: 'Olá! Gostaria de entrar no grupo de ofertas do PromoAÊ!',
-        groupCode: 'FAJHqx3hTqG7M0jfz8m82g'
+        groupCode: 'FAJHqx3hTqG7M0jfz8m82g' // Código do grupo do WhatsApp
     },
     instagram: 'prom0ae', // Apenas o nome de usuário
     tiktok: 'promoaee'   // Apenas o nome de usuário
@@ -14,51 +12,67 @@ function isMobile() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-// Função para abrir o WhatsApp com mensagem
-function openWhatsApp(number, message) {
-    const encodedMessage = encodeURIComponent(message);
-    
-    if (isMobile()) {
-        // Tenta abrir o app nativo
-        window.location.href = `whatsapp://send?phone=${number}&text=${encodedMessage}`;
-        
-        // Fallback para web se não abrir o app
-        setTimeout(() => {
-            window.location.href = `https://wa.me/${number}?text=${encodedMessage}`;
-        }, 2000);
-    } else {
-        // Para desktop, abre no WhatsApp Web
-        window.open(`https://web.whatsapp.com/send?phone=${number}&text=${encodedMessage}`, '_blank');
-    }
+// Função para abrir o WhatsApp com o grupo
+function openWhatsApp() {
+    joinWhatsAppGroup(); // Redireciona para a função de entrar no grupo
 }
 
 // Função para entrar no grupo do WhatsApp
 function joinWhatsAppGroup() {
+    // URL do grupo no formato web
+    const webUrl = `https://chat.whatsapp.com/${config.whatsapp.groupCode}`;
+    
+    // Tenta abrir o app nativo primeiro em dispositivos móveis
     if (isMobile()) {
-        // Tenta abrir o app nativo
-        window.location.href = `whatsapp://chat?code=${config.whatsapp.groupCode}`;
+        // Primeiro, tenta abrir o app nativo do WhatsApp com o link direto
+        const appUrl = `whatsapp://chat?code=${config.whatsapp.groupCode}`;
         
-        // Fallback para web se não abrir o app
+        // Função para verificar se o app foi aberto
+        const checkIfAppOpened = () => {
+            const isPageHidden = document.hidden || document.webkitHidden;
+            if (!isPageHidden) {
+                // Se a página ainda estiver visível após um curto período, tenta abrir o link da web
+                window.location.href = webUrl;
+            }
+        };
+        
+        // Tenta abrir o app nativo
+        window.location.href = appUrl;
+        
+        // Configura o fallback
+        const fallbackTimer = setTimeout(checkIfAppOpened, 1000);
+        
+        // Adiciona listeners para detectar se o app foi aberto
+        const visibilityChangeHandler = () => {
+            if (document.hidden || document.webkitHidden) {
+                // Se a página ficou oculta, o app provavelmente abriu
+                clearTimeout(fallbackTimer);
+            }
+        };
+        
+        document.addEventListener('visibilitychange', visibilityChangeHandler);
+        document.addEventListener('webkitvisibilitychange', visibilityChangeHandler);
+        
+        // Limpa os listeners após um tempo
         setTimeout(() => {
-            window.location.href = `https://chat.whatsapp.com/${config.whatsapp.groupCode}`;
+            document.removeEventListener('visibilitychange', visibilityChangeHandler);
+            document.removeEventListener('webkitvisibilitychange', visibilityChangeHandler);
         }, 2000);
+        
     } else {
-        // Para desktop, abre o link do grupo diretamente
-        window.open(`https://chat.whatsapp.com/${config.whatsapp.groupCode}`, '_blank');
+        // Para desktop, abre em uma nova aba
+        window.open(webUrl, '_blank', 'noopener,noreferrer');
     }
 }
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
-    // Configura o botão do WhatsApp
+    // Configura o botão do WhatsApp para abrir o grupo
     const whatsappBtn = document.getElementById('whatsappBtn');
     if (whatsappBtn) {
         whatsappBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            openWhatsApp(
-                config.whatsapp.number, 
-                'Olá! Gostaria de mais informações sobre as ofertas do PromoAÊ!'
-            );
+            joinWhatsAppGroup();
         });
     }
     
@@ -75,19 +89,22 @@ document.addEventListener('DOMContentLoaded', function() {
     function openInstagram(e) {
         if (e) e.preventDefault();
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const instagramUrl = isMobile 
-            ? `instagram://user?username=${config.instagram}`
-            : `https://www.instagram.com/${config.instagram}`;
+        const appUrl = `instagram://user?username=${config.instagram}`;
+        const webUrl = `https://www.instagram.com/${config.instagram}`;
         
-        // Tenta abrir o app nativo primeiro
         if (isMobile) {
-            window.location.href = instagramUrl;
+            // Tenta abrir o app nativo
+            window.location.href = appUrl;
+            
             // Fallback para web se não abrir o app
             setTimeout(() => {
-                window.location.href = `https://www.instagram.com/${config.instagram}`;
+                if (!document.hidden && !document.webkitHidden) {
+                    window.location.href = webUrl;
+                }
             }, 500);
         } else {
-            window.open(instagramUrl, '_blank');
+            // Para desktop, abre em uma nova aba
+            window.open(webUrl, '_blank', 'noopener,noreferrer');
         }
     }
 
@@ -97,15 +114,45 @@ document.addEventListener('DOMContentLoaded', function() {
         instagramLink.href = `https://www.instagram.com/${config.instagram}`;
         instagramLink.target = '_blank';
         instagramLink.rel = 'noopener noreferrer';
-        instagramLink.addEventListener('click', openInstagram);
     }
 
-    // Configura o TikTok
+    // Função para abrir o TikTok
+    function openTikTok(e) {
+        if (e) e.preventDefault();
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const appUrl = `tiktok://@${config.tiktok}`;
+        const webUrl = `https://www.tiktok.com/@${config.tiktok}`;
+        
+        if (isMobile) {
+            // Tenta abrir o app nativo
+            window.location.href = appUrl;
+            
+            // Fallback para web se não abrir o app
+            setTimeout(() => {
+                if (!document.hidden && !document.webkitHidden) {
+                    window.location.href = webUrl;
+                }
+            }, 500);
+        } else {
+            // Para desktop, abre em uma nova aba
+            window.open(webUrl, '_blank', 'noopener,noreferrer');
+        }
+    }
+    
+    // Configura os links de redes sociais
     const tiktokLink = document.getElementById('tiktokSocial');
     if (tiktokLink) {
-        tiktokLink.href = `https://www.tiktok.com/@${config.tiktok}`;
-        tiktokLink.target = '_blank';
-        tiktokLink.rel = 'noopener noreferrer';
+        tiktokLink.href = `#`;
+        tiktokLink.addEventListener('click', openTikTok);
+    }
+    
+    // Configura o botão do WhatsApp no cabeçalho
+    const whatsappSocial = document.getElementById('whatsappSocial');
+    if (whatsappSocial) {
+        whatsappSocial.addEventListener('click', function(e) {
+            e.preventDefault();
+            joinWhatsAppGroup();
+        });
     }
     
     // Adiciona classe de carregado ao body para animações
